@@ -268,7 +268,7 @@
     dim(C.lensX, st.screenX, yy, '像距 ' + S().toFixed(1) + ' cm', '#ffb86b');
   }
 
-  var NUDGE_DRAG_RATIO = 0.25;   // 拖曳箭頭時，光屏移動量 = 手指移動量 × 這個比例（比直接拖底座細 4 倍）
+  var NUDGE_DRAG_RATIO = 1;      // 拖曳箭頭時，光屏跟手指一樣快（使用者 2026-11-24：拖曳跟手指一樣快，靠點擊微調）
   var NUDGE_STEP = 0.1;   // 微調一次移動 0.1 cm（像清楚的範圍約 ±0.4～1.6 cm，所以要細）
   function nudgeRects() { // 光屏上方的左右三角鈕（跟著光屏）；大小是手指好按的 44×48 px
     var cx = X(st.screenX), cy = Y(C.axisH + C.screen.h / 2 + 0.8) - 34;
@@ -615,7 +615,8 @@
     if (st.nudge && e.pointerId === st.nudge.id) { // 拖曳箭頭：左右拖就連續細調光屏
       var nd = st.nudge;
       if (!nd.moved && Math.abs(p.x - nd.x0) > 6) { nd.moved = true; clearTimeout(nd.t1); clearInterval(nd.t2); }
-      if (nd.moved) { setX('screen', nd.s0 + (p.x - nd.x0) / G.k * NUDGE_DRAG_RATIO, true); sync(); }
+      // 拖曳會吸附焦點；點擊微調才不吸附
+      if (nd.moved) { setX('screen', nd.s0 + (p.x - nd.x0) / G.k * NUDGE_DRAG_RATIO); sync(); }
       e.preventDefault(); return;
     }
     if (st.gest && e.pointerId === st.gest.id) {

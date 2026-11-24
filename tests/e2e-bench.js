@@ -112,13 +112,13 @@ function ok(c, msg) { n++; if (!c) { fails++; console.log('FAIL', msg); } }
   // manifest 與圖示
   ok(await p.evaluate(() => !!document.querySelector('link[rel=manifest]') && !!document.querySelector('link[rel=apple-touch-icon]')), 'manifest 與 apple-touch-icon 連結都在');
 
-  // 14. 拖曳光屏的箭頭：左右拖，光屏以 1/4 的量跟著移動（不吸附）
+  // 14. 拖曳光屏的箭頭：左右拖，光屏跟手指一樣快
   await p.click('#b-reset'); s = await st(); const s1 = s.screenX;
   nr = await p.evaluate(() => BenchDebug.nudgeRects());
   const ax = nr[1].x + 24, ay = nr[1].y + 24;
   await p.mouse.move(ax, ay); await p.mouse.down(); await p.mouse.move(ax + 40, ay, { steps: 4 }); await p.mouse.move(ax + 80, ay, { steps: 4 }); await p.mouse.up();
   s = await st(); const dxCm = s.screenX - s1;
-  ok(dxCm > 2 && dxCm < 4, '拖曳箭頭 80px → 光屏移動約 80/k×0.25 cm（' + dxCm.toFixed(2) + '）');
+  const kk = await p.evaluate(() => BenchDebug.geom.k); ok(Math.abs(dxCm - 80 / kk) < 1.5, '拖曳箭頭 80px → 光屏移動約 80/k cm（' + dxCm.toFixed(2) + ' vs ' + (80 / kk).toFixed(2) + '）');
   nr = await p.evaluate(() => BenchDebug.nudgeRects()); await p.mouse.move(nr[0].x + 24, nr[0].y + 24); await p.mouse.down(); await p.mouse.move(nr[0].x - 40, nr[0].y + 24, { steps: 6 }); await p.mouse.up();
   s = await st(); ok(s.screenX < s1 + dxCm - 1, '往左拖箭頭 → 光屏往左 ' + s.screenX);
   ok(errs.length === 0, '沒有 JS 錯誤 ' + JSON.stringify(errs));
