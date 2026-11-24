@@ -22,7 +22,7 @@ function ok(c, msg) { n++; if (!c) { fails++; console.log('FAIL', msg); } }
   // 2. 還沒標記就按「練習畫光路」：不能進去
   await p.click('#b-ana'); s = await st(); ok(s.mode === 'obs', '沒標記不能分析');
   // 3. 標記
-  await p.click('#b-mark'); s = await st(); ok(s.marker && !s.marker.virtual, '標記實像'); ok(Math.abs(s.marker.x - (30 + 50 / 3)) < 0.01, '標記位置 = 像位置');
+  await p.click('#b-real'); s = await st(); ok(s.marker && !s.marker.virtual, '標記實像'); ok(Math.abs(s.marker.x - (30 + 50 / 3)) < 0.01, '標記位置 = 像位置');
   // 4. 進分析
   await p.click('#b-ana'); s = await st(); ok(s.mode === 'ana', '進入分析');
   const T = await px(5, 3.75), Ptop = await px(30, 3.75), F2 = await px(40, 0), O = await px(30, 0);
@@ -48,7 +48,7 @@ function ok(c, msg) { n++; if (!c) { fails++; console.log('FAIL', msg); } }
   await p.click('#b-back'); s = await st(); ok(s.mode === 'obs' && s.marker, '回實驗桌，標記還在');
   await drag({ x: g.x0 + 3 * g.k, y: yb }, { x: g.x0 + 8 * g.k, y: yb }); s = await st(); ok(s.objX !== 5 && s.marker === null, '移動燈具 → 標記清掉');
   // 6. 凹透鏡：標記虛像、分析
-  await p.click('#b-concave'); await p.click('#b-mark'); s = await st(); ok(s.marker && s.marker.virtual && s.marker.y > 0, '凹透鏡標記虛像（正立）');
+  await p.click('#b-concave'); await p.click('#b-virt'); s = await st(); ok(s.marker && s.marker.virtual && s.marker.y > 0, '凹透鏡標記虛像（正立）');
   await p.click('#b-ana'); s = await st(); ok(s.mode === 'ana', '凹透鏡進入分析');
   await p.screenshot({ path: path.join(shots || '/tmp', 'bench-ana-concave.png') });
 
@@ -67,7 +67,7 @@ function ok(c, msg) { n++; if (!c) { fails++; console.log('FAIL', msg); } }
   nr = await p.evaluate(() => BenchDebug.nudgeRects());
   await p.mouse.move(nr[1].x + 24, nr[1].y + 24); await p.mouse.down(); await p.waitForTimeout(900); await p.mouse.up(); s = await st(); ok(s.screenX > s0 + 0.5, '按住連續微調 → ' + s.screenX);
   // 微調不會清掉標記
-  await p.click('#b-reset'); await drag({ x: g.x0 + 62 * g.k, y: yb }, { x: g.x0 + 46.7 * g.k, y: yb }); await p.click('#b-mark');
+  await p.click('#b-reset'); await drag({ x: g.x0 + 62 * g.k, y: yb }, { x: g.x0 + 46.7 * g.k, y: yb }); await p.click('#b-real');
   nr = await p.evaluate(() => BenchDebug.nudgeRects()); await p.mouse.click(nr[1].x + 24, nr[1].y + 24); s = await st(); ok(s.marker, '微調光屏不清掉標記');
   // 9. 「對答案」：動畫跑完後，畫面上有粗線（取樣光線的顏色）
   await p.click('#b-ana'); await p.click('#t-ans'); await p.waitForTimeout(1700);
@@ -89,7 +89,7 @@ function ok(c, msg) { n++; if (!c) { fails++; console.log('FAIL', msg); } }
   const a1 = await cl(gq.x0 + 62 * gq.k, gq.base - 0.8 * gq.k), a2 = await cl(gq.x0 + 50 * gq.k, gq.base - 0.8 * gq.k);
   await q.mouse.move(a1.x, a1.y); await q.mouse.down(); await q.mouse.move((a1.x + a2.x) / 2, (a1.y + a2.y) / 2, { steps: 4 }); await q.mouse.move(a2.x, a2.y, { steps: 4 }); await q.mouse.up();
   const sx = await q.evaluate(() => BenchDebug.state.screenX); ok(Math.abs(sx - 50) < 0.4, '直拿時拖曳光屏 → ' + sx);
-  const bc = await q.evaluate(() => { const r = document.getElementById('b-mark').getBoundingClientRect(); return BenchLandscape.toClient({ x: 0, y: 0 }, document.getElementById('c')) && { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
+  const bc = await q.evaluate(() => { const r = document.getElementById('b-real').getBoundingClientRect(); return BenchLandscape.toClient({ x: 0, y: 0 }, document.getElementById('c')) && { x: r.x + r.width / 2, y: r.y + r.height / 2 }; });
   await q.mouse.click(bc.x, bc.y); // 按「標記像」（沒對準，會提示但不會出錯）
   await q.screenshot({ path: path.join(shots || '/tmp', 'bench-rot.png') });
   ok(errs2.length === 0, '直拿沒有 JS 錯誤 ' + JSON.stringify(errs2));
@@ -126,23 +126,38 @@ function ok(c, msg) { n++; if (!c) { fails++; console.log('FAIL', msg); } }
   await p.click('#b-reset'); await p.click('#b-convex');
   await p.click('#b-ana'); let mt = await p.evaluate(() => { const m = document.getElementById('msg'); return { shown: !m.hidden, warn: m.classList.contains('warn'), text: m.textContent }; });
   ok(mt.shown && mt.warn && /先找到像/.test(mt.text), '沒找到像按「練習畫光路」→ 醒目提示 ' + mt.text.slice(0, 20));
-  ok(await p.evaluate(() => document.getElementById('b-mark').classList.contains('shake')), '「找到像了」按鈕抖一下');
+  ok(await p.evaluate(() => document.getElementById('b-real').classList.contains('shake')), '「找到實像了」按鈕抖一下');
   s = await st(); ok(s.mode === 'obs', '沒找到像不進練習');
-  await p.click('#b-mark'); mt = await p.evaluate(() => ({ warn: document.getElementById('msg').classList.contains('warn'), text: document.getElementById('msg').textContent }));
+  await p.click('#b-real'); mt = await p.evaluate(() => ({ warn: document.getElementById('msg').classList.contains('warn'), text: document.getElementById('msg').textContent }));
   ok(mt.warn && /再找找/.test(mt.text), '像不在光屏上 → 「再找找」 ' + mt.text.slice(0, 16));
   // 接近時提示「很接近了」（開場物距 25 → 像在 46.67；光屏放在 48.5，差 1.8 cm）
-  await p.evaluate(() => { BenchDebug.state.screenX = 48.5; BenchDebug.render(); }); await p.click('#b-mark');
+  await p.evaluate(() => { BenchDebug.state.screenX = 48.5; BenchDebug.render(); }); await p.click('#b-real');
   mt = await p.evaluate(() => document.getElementById('msg').textContent); ok(/很接近了/.test(mt), '很接近時提示 ' + mt.slice(0, 10));
   // 16. 眼睛跟著光屏、在光屏左邊；沒有「背面看」按鈕
   ok(await p.evaluate(() => !document.getElementById('t-back')), '沒有背面看按鈕');
 
   // 17. 兩個步驟有順序：沒找到像 → ① 亮框、② 暗；找到像 → ① 打勾、② 亮起
-  await p.click('#b-reset'); let cls = await p.evaluate(() => ({ m: document.getElementById('b-mark').className, a: document.getElementById('b-ana').className, mt: document.getElementById('b-mark').textContent }));
+  await p.click('#b-reset'); let cls = await p.evaluate(() => ({ m: document.getElementById('b-real').className, a: document.getElementById('b-ana').className, mt: document.getElementById('b-real').textContent }));
   ok(/next/.test(cls.m) && !/ready/.test(cls.a) && /①/.test(cls.mt), '沒找到像：① 亮框、② 暗 ' + JSON.stringify(cls));
-  await p.evaluate(() => { BenchDebug.state.screenX = 30 + 50 / 3; BenchDebug.render(); }); await p.click('#b-mark');
-  cls = await p.evaluate(() => ({ m: document.getElementById('b-mark').className, a: document.getElementById('b-ana').className, mt: document.getElementById('b-mark').textContent }));
+  await p.evaluate(() => { BenchDebug.state.screenX = 30 + 50 / 3; BenchDebug.render(); }); await p.click('#b-real');
+  cls = await p.evaluate(() => ({ m: document.getElementById('b-real').className, a: document.getElementById('b-ana').className, mt: document.getElementById('b-real').textContent }));
   ok(/done/.test(cls.m) && /ready/.test(cls.a) && /✓/.test(cls.mt), '找到像：① 打勾、② 亮起 ' + JSON.stringify(cls));
   await p.click('#b-reset'); cls = await p.evaluate(() => document.getElementById('b-ana').className); ok(!/ready/.test(cls), '重設後 ② 又變暗');
+
+  // 18. 實像／虛像分開兩個按鈕：按錯會提示、按對才收
+  await p.click('#b-reset'); await p.click('#b-convex');
+  await p.evaluate(() => { BenchDebug.state.screenX = 30 + 50 / 3; BenchDebug.render(); });
+  await p.click('#b-virt'); mt = await p.evaluate(() => ({ warn: document.getElementById('msg').classList.contains('warn'), text: document.getElementById('msg').textContent }));
+  s = await st(); ok(!s.marker && mt.warn && /不是虛像/.test(mt.text), '實像卻按虛像 → 提示、不收 ' + mt.text.slice(0, 12));
+  await p.click('#b-real'); s = await st(); ok(s.marker && !s.marker.virtual, '按實像 → 收');
+  ok(await p.evaluate(() => /done/.test(document.getElementById('b-real').className) && /off/.test(document.getElementById('b-virt').className)), '實像鈕打勾、虛像鈕變暗');
+  await p.click('#b-reset'); await p.click('#b-concave'); await p.click('#b-real');
+  mt = await p.evaluate(() => document.getElementById('msg').textContent); s = await st(); ok(!s.marker && /光屏上不會出現/.test(mt), '凹透鏡按實像 → 提示改看透鏡 ' + mt.slice(0, 12));
+  await p.click('#b-virt'); s = await st(); ok(s.marker && s.marker.virtual, '凹透鏡按虛像 → 收');
+
+  // 19. 碰畫面會收起警告提示
+  await p.click('#b-reset'); await p.click('#b-ana'); ok(await p.evaluate(() => !document.getElementById('msg').hidden), '警告出現');
+  await p.mouse.click(300, 300); ok(await p.evaluate(() => document.getElementById('msg').hidden), '碰畫面 → 警告收起');
   ok(errs.length === 0, '沒有 JS 錯誤 ' + JSON.stringify(errs));
   console.log(n + ' checks, ' + fails + ' failed'); await b.close(); process.exit(fails ? 1 : 0);
 })();

@@ -15,12 +15,14 @@
 <style>
   html, body { margin: 0; height: 100%; background: #0b0d14; color: #dde2f5; overflow: hidden;
     font-family: "Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif; -webkit-user-select: none; user-select: none; }
-  #bar { position: fixed; top: 0; left: 0; z-index: 2; display: flex; flex-wrap: nowrap; gap: 6px; align-items: center; padding: 4px 8px; height: 36px; box-sizing: border-box;
+  #bar { position: fixed; top: 0; left: 0; z-index: 2; display: flex; flex-direction: column; justify-content: center; gap: 4px; padding: 4px 8px; height: 72px; box-sizing: border-box;
     background: #151827; border-bottom: 1px solid #262b40; overflow-x: auto; white-space: nowrap; }
-  .grp { display: inline-flex; gap: 6px; align-items: center; }
+  .grp { display: flex; flex-direction: column; gap: 4px; }
+  .row { display: flex; gap: 6px; align-items: center; flex-wrap: nowrap; }
   .grp[hidden], #msg[hidden] { display: none; }
-  #b-mark.next { border-color: #7d8fff; box-shadow: 0 0 0 2px rgba(125,143,255,.55); }
-  #b-mark.done { background: #2f6b4a; border-color: #4fb37e; }
+  #b-real.next, #b-virt.next { border-color: #7d8fff; box-shadow: 0 0 0 2px rgba(125,143,255,.55); }
+  #b-real.done, #b-virt.done { background: #2f6b4a; border-color: #4fb37e; }
+  #b-real.off, #b-virt.off { opacity: .45; }
   #b-ana { opacity: .55; }
   #b-ana.ready { opacity: 1; background: #2f6b4a; border-color: #4fb37e; box-shadow: 0 0 0 2px rgba(79,179,126,.6); }
   button.primary { background: #2f6b4a; border-color: #4fb37e; }
@@ -51,20 +53,27 @@
 <body>
 <canvas id="c"></canvas>
 <div id="bar">
-  <span id="grp-obs" class="grp">
-    <span class="seg"><button id="b-convex" aria-pressed="true">凸透鏡</button><button id="b-concave" aria-pressed="false">凹透鏡</button></span>
-    <button id="b-mark" class="next">① 找到像了</button>
-    <button id="b-ana">② 練習畫光路</button>
-    <button id="t-rays" aria-pressed="false">示範光路</button>
-    <button id="t-data" aria-pressed="true">數據</button>
-    <button id="b-reset">重設</button>
-  </span>
-  <span id="grp-ana" class="grp" hidden>
-    <button id="b-undo">復原</button>
-    <button id="b-clear">清除線</button>
-    <button id="t-ans" aria-pressed="false">對答案</button>
-    <button id="b-back" class="primary">回實驗桌</button>
-  </span>
+  <div id="grp-obs" class="grp">
+    <div class="row">
+      <span class="seg"><button id="b-convex" aria-pressed="true">凸透鏡</button><button id="b-concave" aria-pressed="false">凹透鏡</button></span>
+      <button id="t-rays" aria-pressed="false">示範光路</button>
+      <button id="t-data" aria-pressed="true">數據</button>
+      <button id="b-reset">重設</button>
+    </div>
+    <div class="row">
+      <button id="b-real" class="next">① 找到實像了（看光屏）</button>
+      <button id="b-virt" class="next">①′ 找到虛像了（看透鏡）</button>
+      <button id="b-ana">② 練習畫光路</button>
+    </div>
+  </div>
+  <div id="grp-ana" class="grp" hidden>
+    <div class="row">
+      <button id="b-undo">復原</button>
+      <button id="b-clear">清除線</button>
+      <button id="t-ans" aria-pressed="false">對答案</button>
+      <button id="b-back" class="primary">回實驗桌</button>
+    </div>
+  </div>
 </div>
 <div id="msg" hidden></div>
 <button id="b-full" aria-label="全螢幕" title="全螢幕">

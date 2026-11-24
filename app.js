@@ -12,7 +12,7 @@
   var C = BenchConfig, O = BenchOptics;
   var canvas = document.getElementById('c'), ctx = canvas.getContext('2d');
   var FONT = '"Noto Sans TC","PingFang TC","Microsoft JhengHei",sans-serif';
-  var BAR_H = 36;
+  var BAR_H = 72;   // 工具列兩排高
   var st = {
     lens: 'convex', objX: C.start.objX, screenX: C.start.screenX,
     rays: false, data: true,          // rays＝示範光路（自動畫的三條主光線，預設關）
@@ -543,26 +543,28 @@
   function requestRender() { if (!pending) { pending = true; requestAnimationFrame(function () { pending = false; render(); }); } }
 
   // ---------- 標記像 ----------
-  function markImage() {
-    var f = F(), u = U(), s = S(), R = C.lensRadius, yo = srcY(), im = O.image(f, u);
-    if (im.infinity) { say('燈具剛好在焦點上，像在無限遠，找不到。換個位置再找找。', false, true); shake('b-mark'); return; }
-    var xI = C.lensX + im.dImg, yI = im.m * yo;
-    if (im.dImg > 0) { // 實像：要在光屏上看得清楚
+  function markImage(kind) { // kind：'real'（光屏上找到實像）｜'virtual'（隔著透鏡看到虛像）
+    var f = F(), u = U(), s = S(), R = C.lensRadius, yo = srcY(), im = O.image(f, u), btn = kind === 'real' ? 'b-real' : 'b-virt';
+    if (im.infinity) { say('燈具剛好在焦點上，像在無限遠，找不到。換個位置再找找。', false, true); shake(btn); return; }
+    var xI = C.lensX + im.dImg, yI = im.m * yo, isReal = im.dImg > 0;
+    if (kind === 'real') {
+      if (!isReal) { say('光屏上不會出現這個像，再找找。試試看「看透鏡」那張圖，看到像再按「①′ 找到虛像了」。', false, true); shake('b-virt'); return; }
       if (R * Math.abs(1 - s / im.dImg) > 0.4) {
         var off = Math.abs(s - im.dImg);   // 只說「近不近」，不說往哪邊
-        say(off <= 3 ? '很接近了！用光屏上方的箭頭一點一點微調，找光屏上光點最小、最清楚的位置，再按「找到像了」。'
-                     : '像不在這裡，再找找。慢慢移動光屏，找光屏上光點最小、最清楚的位置，再按「找到像了」。', false, true);
-        shake('b-mark'); return;
+        say(off <= 3 ? '很接近了！用光屏上方的箭頭一點一點微調，找光屏上光點最小、最清楚的位置，再按「① 找到實像了」。'
+                     : '像不在這裡，再找找。慢慢移動光屏，找光屏上光點最小、最清楚的位置，再按「① 找到實像了」。', false, true);
+        shake(btn); return;
       }
-      if (Math.abs(yI) > C.screen.h / 2 || xI > C.range.screenMax) { say('這個像會跑出光屏外，沒辦法標記。把燈具換個位置再找找。', false, true); shake('b-mark'); return; }
+      if (Math.abs(yI) > C.screen.h / 2 || xI > C.range.screenMax) { say('這個像會跑出光屏外，沒辦法標記。把燈具換個位置再找找。', false, true); shake(btn); return; }
       st.marker = { x: xI, y: yI, virtual: false };
-    } else { // 虛像：隔著透鏡看，要看得到
+    } else {
+      if (isReal) { say('隔著透鏡看到的不是虛像，再找找。這個像會成在光屏上，改移動光屏找它，再按「① 找到實像了」。', false, true); shake('b-real'); return; }
       var lv = O.lensSpot(f, u, C.eye.dist, C.eye.near, { r: 0, y: yo }, 0);
-      if (Math.abs(lv.y) > R) { say('像太大，超出鏡片，看不到。把燈具換個位置再找找。', false, true); shake('b-mark'); return; }
-      if (xI < 0) { say('像在桌面外面，沒辦法標記。把燈具換個位置再找找。', false, true); shake('b-mark'); return; }
+      if (Math.abs(lv.y) > R) { say('像太大，超出鏡片，看不到。把燈具換個位置再找找。', false, true); shake(btn); return; }
+      if (xI < 0) { say('像在桌面外面，沒辦法標記。把燈具換個位置再找找。', false, true); shake(btn); return; }
       st.marker = { x: xI, y: yI, virtual: true };
     }
-    say((st.marker.virtual ? '已標記虛像（隔著透鏡看到的位置）' : '已標記實像（光屏上清楚的位置）') + '。按「練習畫光路」開始畫圖。');
+    say((st.marker.virtual ? '已找到虛像（隔著透鏡看到的位置）' : '已找到實像（光屏上清楚的位置）') + '。按「② 練習畫光路」開始畫圖。');
     sync();
   }
   function clearWork() { st.marker = null; st.lines = []; st.prev = null; st.gest = null; st.ans = false; }
@@ -597,6 +599,7 @@
     }
   }
   canvas.addEventListener('pointerdown', function (e) {
+    if ($('msg').classList.contains('warn')) say('');   // 碰畫面就收起警告（它會蓋住光屏上方的微調箭頭）
     var p = pos(e);
     if (st.mode === 'ana') {
       if (p.x > G.leftW) return;
@@ -655,8 +658,11 @@
     $('b-convex').setAttribute('aria-pressed', st.lens === 'convex'); $('b-concave').setAttribute('aria-pressed', st.lens === 'concave');
     $('t-rays').setAttribute('aria-pressed', st.rays); $('t-data').setAttribute('aria-pressed', st.data); $('t-ans').setAttribute('aria-pressed', st.ans);
     // 兩個步驟有順序：① 先找到像 → ② 練習畫光路（沒找到像時 ② 是暗的，按了會提示要先找像）
-    $('b-mark').textContent = st.marker ? '① 找到像了 ✓' : '① 找到像了';
-    $('b-mark').classList.toggle('next', !st.marker); $('b-mark').classList.toggle('done', !!st.marker);
+    var gotReal = !!st.marker && !st.marker.virtual, gotVirt = !!st.marker && st.marker.virtual;
+    $('b-real').textContent = '① 找到實像了（看光屏）' + (gotReal ? ' ✓' : ''); $('b-virt').textContent = '①′ 找到虛像了（看透鏡）' + (gotVirt ? ' ✓' : '');
+    $('b-real').classList.toggle('next', !st.marker); $('b-virt').classList.toggle('next', !st.marker);
+    $('b-real').classList.toggle('done', gotReal); $('b-virt').classList.toggle('done', gotVirt);
+    $('b-real').classList.toggle('off', gotVirt); $('b-virt').classList.toggle('off', gotReal);
     $('b-ana').classList.toggle('ready', !!st.marker);
     $('b-undo').disabled = !st.lines.length; $('b-clear').disabled = !st.lines.length;
     if (G.k) anaScale();
@@ -665,9 +671,10 @@
   function setLens(l) { if (st.lens !== l) { st.lens = l; clearWork(); } sync(); }
   $('b-convex').onclick = function () { setLens('convex'); };
   $('b-concave').onclick = function () { setLens('concave'); };
-  $('b-mark').onclick = markImage;
+  $('b-real').onclick = function () { markImage('real'); };
+  $('b-virt').onclick = function () { markImage('virtual'); };
   $('b-ana').onclick = function () {
-    if (!st.marker) { say('還不能練習畫光路：要先找到像。移動光屏找最清楚的像（凹透鏡或燈具在焦點內時，像不會出現在光屏上，要看「看透鏡」那張圖），再按「找到像了」。', false, true); shake('b-mark'); return; }
+    if (!st.marker) { say('還不能練習畫光路：要先找到像。移動光屏找最清楚的像，按「① 找到實像了」；如果像不在光屏上，改看「看透鏡」，按「①′ 找到虛像了」。', false, true); shake('b-real'); shake('b-virt'); return; }
     st.mode = 'ana'; st.drag = null; sync(); say('從標示點（O、F、物、像）拖曳到另一個點，或拉成水平線，畫出光的路徑。', true);
   };
   $('b-back').onclick = function () { st.mode = 'obs'; st.prev = null; st.gest = null; st.ans = false; say(''); sync(); };
