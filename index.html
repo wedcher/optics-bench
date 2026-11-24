@@ -24,6 +24,9 @@
   #install[hidden] { display: none; }
   #install .card { background: #1a1f35; border: 1px solid #3c4468; border-radius: 12px; padding: 14px 18px; max-width: 420px; font-size: 15px; line-height: 1.7; }
   #install ol { margin: 8px 0 12px; padding-left: 22px; }
+  #msg.warn { background: rgba(70,46,8,.97); border-color: #ffb84d; font-size: 15px; padding: 8px 14px; max-width: 80%; }
+  @keyframes shake { 0%,100% { transform: translateX(0); } 20% { transform: translateX(-5px); } 40% { transform: translateX(5px); } 60% { transform: translateX(-4px); } 80% { transform: translateX(4px); } }
+  button.shake { animation: shake .5s; border-color: #ffb84d; box-shadow: 0 0 0 2px rgba(255,184,77,.6); }
   #msg { position: fixed; left: 8px; bottom: 8px; max-width: 60%; z-index: 3; background: rgba(20,24,40,.94); border: 1px solid #3c4468;
     border-radius: 8px; padding: 6px 10px; font-size: 13px; line-height: 1.5; color: #f1f3ff; pointer-events: none; }
   button { font: inherit; font-size: 13px; color: #dde2f5; background: #20253b; border: 1px solid #343b5c; border-radius: 8px;
@@ -50,7 +53,6 @@
     <button id="b-ana" class="primary">練習畫光路</button>
     <button id="t-rays" aria-pressed="false">示範光路</button>
     <button id="t-data" aria-pressed="true">數據</button>
-    <button id="t-back" aria-pressed="false">光屏：透鏡側看</button>
     <button id="b-reset">重設</button>
   </span>
   <span id="grp-ana" class="grp" hidden>

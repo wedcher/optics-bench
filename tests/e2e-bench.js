@@ -121,6 +121,20 @@ function ok(c, msg) { n++; if (!c) { fails++; console.log('FAIL', msg); } }
   const kk = await p.evaluate(() => BenchDebug.geom.k); ok(Math.abs(dxCm - 80 / kk) < 1.5, '拖曳箭頭 80px → 光屏移動約 80/k cm（' + dxCm.toFixed(2) + ' vs ' + (80 / kk).toFixed(2) + '）');
   nr = await p.evaluate(() => BenchDebug.nudgeRects()); await p.mouse.move(nr[0].x + 24, nr[0].y + 24); await p.mouse.down(); await p.mouse.move(nr[0].x - 40, nr[0].y + 24, { steps: 6 }); await p.mouse.up();
   s = await st(); ok(s.screenX < s1 + dxCm - 1, '往左拖箭頭 → 光屏往左 ' + s.screenX);
+
+  // 15. 找不到像：按「練習畫光路」或「找到像了」要有醒目的提示，不能默默沒反應
+  await p.click('#b-reset'); await p.click('#b-convex');
+  await p.click('#b-ana'); let mt = await p.evaluate(() => { const m = document.getElementById('msg'); return { shown: !m.hidden, warn: m.classList.contains('warn'), text: m.textContent }; });
+  ok(mt.shown && mt.warn && /先找到像/.test(mt.text), '沒找到像按「練習畫光路」→ 醒目提示 ' + mt.text.slice(0, 20));
+  ok(await p.evaluate(() => document.getElementById('b-mark').classList.contains('shake')), '「找到像了」按鈕抖一下');
+  s = await st(); ok(s.mode === 'obs', '沒找到像不進練習');
+  await p.click('#b-mark'); mt = await p.evaluate(() => ({ warn: document.getElementById('msg').classList.contains('warn'), text: document.getElementById('msg').textContent }));
+  ok(mt.warn && /再找找/.test(mt.text), '像不在光屏上 → 「再找找」 ' + mt.text.slice(0, 16));
+  // 接近時提示「很接近了」（開場物距 25 → 像在 46.67；光屏放在 48.5，差 1.8 cm）
+  await p.evaluate(() => { BenchDebug.state.screenX = 48.5; BenchDebug.render(); }); await p.click('#b-mark');
+  mt = await p.evaluate(() => document.getElementById('msg').textContent); ok(/很接近了/.test(mt), '很接近時提示 ' + mt.slice(0, 10));
+  // 16. 眼睛跟著光屏、在光屏左邊；沒有「背面看」按鈕
+  ok(await p.evaluate(() => !document.getElementById('t-back')), '沒有背面看按鈕');
   ok(errs.length === 0, '沒有 JS 錯誤 ' + JSON.stringify(errs));
   console.log(n + ' checks, ' + fails + ' failed'); await b.close(); process.exit(fails ? 1 : 0);
 })();

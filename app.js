@@ -15,7 +15,7 @@
   var BAR_H = 36;
   var st = {
     lens: 'convex', objX: C.start.objX, screenX: C.start.screenX,
-    rays: false, data: true, back: false,          // rays＝示範光路（自動畫的三條主光線，預設關）
+    rays: false, data: true,          // rays＝示範光路（自動畫的三條主光線，預設關）
     mode: 'obs',                                    // 'obs' 實驗桌｜'ana' 分析光路
     marker: null, lines: [], prev: null, gest: null, ans: false, ansT0: 0, drag: null, snapTo: null, snapScr: null, nudge: null
   };
@@ -52,12 +52,15 @@
   }
 
   var msgTimer = null;
-  function say(t, sticky) {
+  function say(t, sticky, warn) { // warn：醒目的警告（上方置中、琥珀色，停久一點）
     var el = $('msg'); clearTimeout(msgTimer);
     if (!t) { el.hidden = true; return; }
-    el.textContent = t; el.hidden = false;
-    if (!sticky) msgTimer = setTimeout(function () { el.hidden = true; }, 4500);
+    el.textContent = t; el.hidden = false; el.classList.toggle('warn', !!warn);
+    el.style.top = warn ? (BAR_H + 10) + 'px' : ''; el.style.bottom = warn ? 'auto' : '';
+    el.style.left = warn ? (G.leftW / 2) + 'px' : ''; el.style.transform = warn ? 'translateX(-50%)' : '';
+    if (!sticky) msgTimer = setTimeout(function () { el.hidden = true; }, warn ? 6000 : 4500);
   }
+  function shake(id) { var b = $(id); if (!b) return; b.classList.remove('shake'); void b.offsetWidth; b.classList.add('shake'); setTimeout(function () { b.classList.remove('shake'); }, 600); }
 
   // ---------- 版面 ----------
   function layout() {
@@ -249,11 +252,11 @@
     text(st.marker.virtual ? '虛像標記' : '實像標記', x + 12, y - 8, col, Math.max(11, G.k * 1.4), 'left');
   }
 
-  function drawEye() {
-    var x = X(C.lensX + C.eye.dist), y = Y(C.axisH), R = C.lensRadius * G.k;
-    line(x, y, X(C.lensX), y - R, 'rgba(255,255,255,.18)', 1, [3, 4]); line(x, y, X(C.lensX), y + R, 'rgba(255,255,255,.18)', 1, [3, 4]);
+  function drawEye() { // 眼睛跟著光屏，站在光屏的左邊（透鏡這側）看光屏
+    var x = X(st.screenX - 4.5), y = Y(C.axisH), sx = X(st.screenX) - 6;
+    line(x + 12, y, sx, y, 'rgba(255,255,255,.35)', 1.2, [3, 4]); arrowHead(sx, y, 1, 0, 6, 'rgba(255,255,255,.5)');
     ctx.beginPath(); ctx.ellipse(x, y, 9, 5.5, 0, 0, 6.283); ctx.fillStyle = 'rgba(15,18,28,.85)'; ctx.fill(); ctx.strokeStyle = '#e6e9f5'; ctx.lineWidth = 1.4; ctx.stroke();
-    ctx.beginPath(); ctx.arc(x - 2, y, 3, 0, 6.283); ctx.fillStyle = '#e6e9f5'; ctx.fill();
+    ctx.beginPath(); ctx.arc(x + 2, y, 3, 0, 6.283); ctx.fillStyle = '#e6e9f5'; ctx.fill();
     text('眼睛', x, y - 10, '#e6e9f5', 11, 'center');
   }
 
@@ -488,13 +491,13 @@
     ctx.save(); ctx.beginPath(); ctx.rect(cx - bw * kb / 2, cy - bh * kb / 2, bw * kb, bh * kb); ctx.clip(); ctx.globalCompositeOperation = 'lighter';
     var maxBlur = 0;
     L.windows.forEach(function (w) {
-      var sp = O.screenSpot(f, u, s, R, w, L.windowR, st.back); maxBlur = Math.max(maxBlur, sp.blur);
+      var sp = O.screenSpot(f, u, s, R, w, L.windowR, false); maxBlur = Math.max(maxBlur, sp.blur);
       spot(cx + sp.r * kb, cy - sp.y * kb, sp.sharp * kb, sp.blur * kb, w.color);
     });
     ctx.restore();
     ctx.strokeStyle = '#8a91ad'; ctx.lineWidth = 2; ctx.strokeRect(cx - bw * kb / 2, cy - bh * kb / 2, bw * kb, bh * kb);
     var msg = st.data ? (st.lens === 'concave' ? '凹透鏡：光屏上不會成像' : maxBlur < 0.12 ? '像很清楚' : '像模糊，移動光屏找清楚的位置') : '';
-    sideText(p, p.x + 16 + bw * kb, st.back ? '光屏（背面看）' : '光屏（透鏡側看）', msg);
+    sideText(p, p.x + 16 + bw * kb, '光屏（透鏡側看）', msg);
   }
 
   var NOUN = { enlarged: '放大', reduced: '縮小', same: '等大' };
@@ -542,16 +545,21 @@
   // ---------- 標記像 ----------
   function markImage() {
     var f = F(), u = U(), s = S(), R = C.lensRadius, yo = srcY(), im = O.image(f, u);
-    if (im.infinity) { say('物在焦點上，像在無限遠，無法標記。'); return; }
+    if (im.infinity) { say('燈具剛好在焦點上，像在無限遠，找不到。換個位置再找找。', false, true); shake('b-mark'); return; }
     var xI = C.lensX + im.dImg, yI = im.m * yo;
     if (im.dImg > 0) { // 實像：要在光屏上看得清楚
-      if (R * Math.abs(1 - s / im.dImg) > 0.4) { say('光屏上的像還不夠清楚，請移動光屏再標記。'); return; }
-      if (Math.abs(yI) > C.screen.h / 2 || xI > C.range.screenMax) { say('像超出光屏，無法標記。'); return; }
+      if (R * Math.abs(1 - s / im.dImg) > 0.4) {
+        var off = Math.abs(s - im.dImg);   // 只說「近不近」，不說往哪邊
+        say(off <= 3 ? '很接近了！用光屏上方的箭頭一點一點微調，找光屏上光點最小、最清楚的位置，再按「找到像了」。'
+                     : '像不在這裡，再找找。慢慢移動光屏，找光屏上光點最小、最清楚的位置，再按「找到像了」。', false, true);
+        shake('b-mark'); return;
+      }
+      if (Math.abs(yI) > C.screen.h / 2 || xI > C.range.screenMax) { say('這個像會跑出光屏外，沒辦法標記。把燈具換個位置再找找。', false, true); shake('b-mark'); return; }
       st.marker = { x: xI, y: yI, virtual: false };
     } else { // 虛像：隔著透鏡看，要看得到
       var lv = O.lensSpot(f, u, C.eye.dist, C.eye.near, { r: 0, y: yo }, 0);
-      if (Math.abs(lv.y) > R) { say('像太大，超出鏡片，看不到。'); return; }
-      if (xI < 0) { say('像在桌面外，無法標記。'); return; }
+      if (Math.abs(lv.y) > R) { say('像太大，超出鏡片，看不到。把燈具換個位置再找找。', false, true); shake('b-mark'); return; }
+      if (xI < 0) { say('像在桌面外面，沒辦法標記。把燈具換個位置再找找。', false, true); shake('b-mark'); return; }
       st.marker = { x: xI, y: yI, virtual: true };
     }
     say((st.marker.virtual ? '已標記虛像（隔著透鏡看到的位置）' : '已標記實像（光屏上清楚的位置）') + '。按「練習畫光路」開始畫圖。');
@@ -646,7 +654,6 @@
     $('grp-obs').hidden = ana; $('grp-ana').hidden = !ana;
     $('b-convex').setAttribute('aria-pressed', st.lens === 'convex'); $('b-concave').setAttribute('aria-pressed', st.lens === 'concave');
     $('t-rays').setAttribute('aria-pressed', st.rays); $('t-data').setAttribute('aria-pressed', st.data); $('t-ans').setAttribute('aria-pressed', st.ans);
-    $('t-back').setAttribute('aria-pressed', st.back); $('t-back').textContent = st.back ? '光屏：背面看' : '光屏：透鏡側看';
     $('b-undo').disabled = !st.lines.length; $('b-clear').disabled = !st.lines.length;
     if (G.k) anaScale();
     requestRender();
@@ -656,7 +663,7 @@
   $('b-concave').onclick = function () { setLens('concave'); };
   $('b-mark').onclick = markImage;
   $('b-ana').onclick = function () {
-    if (!st.marker) { say('請先移動光屏找到清楚的像（凹透鏡或焦點內的虛像，則隔著透鏡看），再按「找到像了」。'); return; }
+    if (!st.marker) { say('還不能練習畫光路：要先找到像。移動光屏找最清楚的像（凹透鏡或燈具在焦點內時，像不會出現在光屏上，要看「看透鏡」那張圖），再按「找到像了」。', false, true); shake('b-mark'); return; }
     st.mode = 'ana'; st.drag = null; sync(); say('從標示點（O、F、物、像）拖曳到另一個點，或拉成水平線，畫出光的路徑。', true);
   };
   $('b-back').onclick = function () { st.mode = 'obs'; st.prev = null; st.gest = null; st.ans = false; say(''); sync(); };
@@ -665,7 +672,6 @@
   $('t-ans').onclick = function () { st.ans = !st.ans; if (st.ans) st.ansT0 = performance.now(); sync(); };
   $('t-rays').onclick = function () { st.rays = !st.rays; sync(); };
   $('t-data').onclick = function () { st.data = !st.data; sync(); };
-  $('t-back').onclick = function () { st.back = !st.back; sync(); };
   $('b-reset').onclick = function () { st.objX = C.start.objX; st.screenX = C.start.screenX; clearWork(); say(''); sync(); };
 
   function onResize() { if (layout()) requestRender(); }
