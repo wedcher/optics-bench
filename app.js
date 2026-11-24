@@ -268,6 +268,7 @@
     dim(C.lensX, st.screenX, yy, '像距 ' + S().toFixed(1) + ' cm', '#ffb86b');
   }
 
+  var NUDGE_DRAG_RATIO = 0.25;   // 拖曳箭頭時，光屏移動量 = 手指移動量 × 這個比例（比直接拖底座細 4 倍）
   var NUDGE_STEP = 0.1;   // 微調一次移動 0.1 cm（像清楚的範圍約 ±0.4～1.6 cm，所以要細）
   function nudgeRects() { // 光屏上方的左右三角鈕（跟著光屏）；大小是手指好按的 44×48 px
     var cx = X(st.screenX), cy = Y(C.axisH + C.screen.h / 2 + 0.8) - 34;
@@ -600,7 +601,7 @@
     var nr = nudgeRects().filter(function (r) { return p.x >= r.x && p.x <= r.x + r.w && p.y >= r.y && p.y <= r.y + r.h; })[0];
     if (nr) { // 按住會連續微調
       nudgeStop(); nudgeScreen(nr.dir);
-      st.nudge = { dir: nr.dir, id: e.pointerId, t1: setTimeout(function () { st.nudge.t2 = setInterval(function () { nudgeScreen(nr.dir); }, 70); }, 380), t2: null };
+      st.nudge = { dir: nr.dir, id: e.pointerId, x0: p.x, s0: st.screenX, moved: false, t1: setTimeout(function () { st.nudge.t2 = setInterval(function () { nudgeScreen(nr.dir); }, 70); }, 380), t2: null };
       try { canvas.setPointerCapture(e.pointerId); } catch (err3) { /* ignore */ }
       e.preventDefault(); requestRender(); return;
     }
@@ -611,6 +612,12 @@
   });
   canvas.addEventListener('pointermove', function (e) {
     var p = pos(e);
+    if (st.nudge && e.pointerId === st.nudge.id) { // 拖曳箭頭：左右拖就連續細調光屏
+      var nd = st.nudge;
+      if (!nd.moved && Math.abs(p.x - nd.x0) > 6) { nd.moved = true; clearTimeout(nd.t1); clearInterval(nd.t2); }
+      if (nd.moved) { setX('screen', nd.s0 + (p.x - nd.x0) / G.k * NUDGE_DRAG_RATIO, true); sync(); }
+      e.preventDefault(); return;
+    }
     if (st.gest && e.pointerId === st.gest.id) {
       if (!st.gest.moved && Math.hypot(p.x - st.gest.x0, p.y - st.gest.y0) > 6) st.gest.moved = true;
       if (st.gest.moved) { updatePreview(p); requestRender(); }

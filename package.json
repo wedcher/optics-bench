@@ -1,0 +1,10 @@
+{
+  "name": "optics-bench",
+  "private": true,
+  "description": "光學實驗桌（網頁模擬器）。沒有相依套件；以下指令只用於驗證（e2e 需要 playwright）。",
+  "scripts": {
+    "check": "node tests/check-bench.js",
+    "test": "node tests/check-bench.js && node tests/e2e-bench.js"
+  },
+  "devDependencies": { "playwright": "^1.65.1" }
+}
