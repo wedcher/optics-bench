@@ -19,7 +19,7 @@ function ok(c, msg) { n++; if (!c) { fails++; console.log('FAIL', msg); } }
   const yb = g.base - 0.8 * g.k;
   await drag({ x: g.x0 + 62 * g.k, y: yb }, { x: g.x0 + 46.7 * g.k, y: yb });
   let s = await st(); ok(Math.abs(s.screenX - 46.7) < 0.3, '拖曳光屏 → ' + s.screenX);
-  // 2. 還沒標記就按「分析光路」：不能進去
+  // 2. 還沒標記就按「練習畫光路」：不能進去
   await p.click('#b-ana'); s = await st(); ok(s.mode === 'obs', '沒標記不能分析');
   // 3. 標記
   await p.click('#b-mark'); s = await st(); ok(s.marker && !s.marker.virtual, '標記實像'); ok(Math.abs(s.marker.x - (30 + 50 / 3)) < 0.01, '標記位置 = 像位置');
