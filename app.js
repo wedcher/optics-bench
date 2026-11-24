@@ -654,6 +654,10 @@
     $('grp-obs').hidden = ana; $('grp-ana').hidden = !ana;
     $('b-convex').setAttribute('aria-pressed', st.lens === 'convex'); $('b-concave').setAttribute('aria-pressed', st.lens === 'concave');
     $('t-rays').setAttribute('aria-pressed', st.rays); $('t-data').setAttribute('aria-pressed', st.data); $('t-ans').setAttribute('aria-pressed', st.ans);
+    // 兩個步驟有順序：① 先找到像 → ② 練習畫光路（沒找到像時 ② 是暗的，按了會提示要先找像）
+    $('b-mark').textContent = st.marker ? '① 找到像了 ✓' : '① 找到像了';
+    $('b-mark').classList.toggle('next', !st.marker); $('b-mark').classList.toggle('done', !!st.marker);
+    $('b-ana').classList.toggle('ready', !!st.marker);
     $('b-undo').disabled = !st.lines.length; $('b-clear').disabled = !st.lines.length;
     if (G.k) anaScale();
     requestRender();

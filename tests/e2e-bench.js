@@ -135,6 +135,14 @@ function ok(c, msg) { n++; if (!c) { fails++; console.log('FAIL', msg); } }
   mt = await p.evaluate(() => document.getElementById('msg').textContent); ok(/很接近了/.test(mt), '很接近時提示 ' + mt.slice(0, 10));
   // 16. 眼睛跟著光屏、在光屏左邊；沒有「背面看」按鈕
   ok(await p.evaluate(() => !document.getElementById('t-back')), '沒有背面看按鈕');
+
+  // 17. 兩個步驟有順序：沒找到像 → ① 亮框、② 暗；找到像 → ① 打勾、② 亮起
+  await p.click('#b-reset'); let cls = await p.evaluate(() => ({ m: document.getElementById('b-mark').className, a: document.getElementById('b-ana').className, mt: document.getElementById('b-mark').textContent }));
+  ok(/next/.test(cls.m) && !/ready/.test(cls.a) && /①/.test(cls.mt), '沒找到像：① 亮框、② 暗 ' + JSON.stringify(cls));
+  await p.evaluate(() => { BenchDebug.state.screenX = 30 + 50 / 3; BenchDebug.render(); }); await p.click('#b-mark');
+  cls = await p.evaluate(() => ({ m: document.getElementById('b-mark').className, a: document.getElementById('b-ana').className, mt: document.getElementById('b-mark').textContent }));
+  ok(/done/.test(cls.m) && /ready/.test(cls.a) && /✓/.test(cls.mt), '找到像：① 打勾、② 亮起 ' + JSON.stringify(cls));
+  await p.click('#b-reset'); cls = await p.evaluate(() => document.getElementById('b-ana').className); ok(!/ready/.test(cls), '重設後 ② 又變暗');
   ok(errs.length === 0, '沒有 JS 錯誤 ' + JSON.stringify(errs));
   console.log(n + ' checks, ' + fails + ' failed'); await b.close(); process.exit(fails ? 1 : 0);
 })();
